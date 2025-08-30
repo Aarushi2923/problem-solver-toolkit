@@ -9,55 +9,76 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
+            background: linear-gradient(135deg, #1f2937, #111827);
+            background-attachment: fixed;
         }
         .container {
-            max-width: 800px;
+            max-width: 900px;
         }
         .scrollable-content {
             max-height: 500px;
             overflow-y: auto;
             white-space: pre-wrap;
         }
+        /* Custom scrollbar styles */
+        .scrollable-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        .scrollable-content::-webkit-scrollbar-track {
+            background: #e5e7eb;
+            border-radius: 10px;
+        }
+        .scrollable-content::-webkit-scrollbar-thumb {
+            background: #6366f1;
+            border-radius: 10px;
+        }
+        .message-box {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+        }
     </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
-    <div class="container bg-white rounded-xl shadow-lg p-8 space-y-8 w-full">
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div class="container bg-white bg-opacity-95 rounded-xl shadow-2xl p-8 space-y-8 w-full backdrop-blur-sm">
         <div class="text-center">
-            <h1 class="text-3xl font-bold text-gray-800">The Problem-Solver's Toolkit</h1>
+            <h1 class="text-4xl font-extrabold text-gray-800 flex items-center justify-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-indigo-600" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                </svg>
+                <span>The Problem-Solver's Toolkit</span>
+            </h1>
             <p class="mt-2 text-gray-600">Simulate a consulting engagement. Input a business problem below to receive a structured analysis and solution.</p>
         </div>
 
         <!-- Input Section -->
         <div class="space-y-4">
-            <label for="problem-input" class="block text-gray-700 font-semibold">Describe the problem:</label>
-            <textarea id="problem-input" rows="4" class="w-full p-3 border-2 border-gray-300 rounded-md focus:outline-none focus:border-indigo-500 transition duration-200" placeholder="e.g., 'How can a small coffee shop increase its evening sales?'"></textarea>
-            <button id="generate-btn" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-md hover:bg-indigo-700 transition duration-300 ease-in-out transform hover:scale-105">
+            <label for="problem-input" class="block text-gray-700 font-semibold">Describe the business problem:</label>
+            <textarea id="problem-input" rows="4" class="w-full p-4 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500 transition duration-300 bg-gray-50 placeholder-gray-400" placeholder="e.g., 'How can a small coffee shop increase its evening sales?'"></textarea>
+            <button id="generate-btn" class="w-full bg-indigo-600 text-white font-bold py-4 px-6 rounded-lg hover:bg-indigo-700 transition duration-300 ease-in-out transform hover:scale-105 shadow-lg">
                 Generate Solution
             </button>
         </div>
 
         <!-- Loading Indicator -->
-        <div id="loading-indicator" class="hidden flex justify-center items-center my-8">
-            <div class="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-gray-400 border-t-indigo-600"></div>
+        <div id="loading-indicator" class="hidden flex flex-col items-center justify-center my-8 text-gray-600">
+            <div class="animate-spin rounded-full h-16 w-16 border-4 border-t-4 border-gray-400 border-t-indigo-600 mb-4"></div>
+            <p>Analyzing problem and generating a solution...</p>
         </div>
 
         <!-- Output Section -->
         <div id="solution-output" class="hidden">
-            <div class="bg-gray-50 border border-gray-200 rounded-md p-6 space-y-4">
-                <h2 class="text-xl font-bold text-gray-800">Your Structured Solution:</h2>
-                <div id="response-content" class="text-gray-700 scrollable-content leading-relaxed"></div>
-                <div id="citations" class="mt-4 text-xs text-gray-500 border-t pt-4"></div>
+            <div class="bg-gray-50 bg-opacity-70 border border-gray-200 rounded-lg p-8 space-y-6">
+                <h2 class="text-2xl font-bold text-gray-800">Your Structured Solution:</h2>
+                <div id="response-content" class="text-gray-700 scrollable-content leading-relaxed space-y-4"></div>
+                <div id="citations" class="mt-6 text-xs text-gray-500 border-t pt-4"></div>
             </div>
         </div>
     </div>
 
     <script>
-        // Global variables for Firebase configuration (provided by the Canvas environment)
-        const __app_id = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
-        const __firebase_config = typeof window.__firebase_config !== 'undefined' ? window.__firebase_config : '{}';
-        const __initial_auth_token = typeof window.__initial_auth_token !== 'undefined' ? window.__initial_auth_token : null;
-
         const generateBtn = document.getElementById('generate-btn');
         const problemInput = document.getElementById('problem-input');
         const loadingIndicator = document.getElementById('loading-indicator');
@@ -76,11 +97,19 @@
 
             loadingIndicator.classList.remove('hidden');
             solutionOutput.classList.add('hidden');
+            generateBtn.disabled = true;
             responseContent.innerHTML = '';
             citationsDiv.innerHTML = '';
             
             const apiKey = "AIzaSyB32Z05baer-b9iPE_6zNOOSuPxhOAN_kQ";
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+            if (apiKey === "") {
+                loadingIndicator.classList.add('hidden');
+                displayMessage("Error: Please provide a valid API key in the code to run this application.", 'error');
+                generateBtn.disabled = false;
+                return;
+            }
 
             const systemPrompt = `You are a world-class strategic consultant. Your task is to provide a structured, data-driven analysis and a set of actionable recommendations for a given business problem. 
             
@@ -113,6 +142,7 @@
                 loadingIndicator.classList.add('hidden');
                 displayMessage('Failed to fetch a solution. Please try again later.', 'error');
                 console.error('Fetch error:', error);
+                generateBtn.disabled = false;
                 return;
             }
 
@@ -122,11 +152,7 @@
 
                 if (candidate && candidate.content?.parts?.[0]?.text) {
                     const text = candidate.content.parts[0].text;
-                    const markdownText = text
-                        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-                        .replace(/^(\d+\.)\s+(.*)$/gm, '<p>$1 <b>$2</b></p>')
-                        .replace(/^- (.*)$/gm, '<li>$1</li>');
-                    responseContent.innerHTML = markdownText;
+                    responseContent.innerHTML = renderMarkdown(text);
                     solutionOutput.classList.remove('hidden');
 
                     let sources = [];
@@ -159,7 +185,20 @@
                 console.error('JSON parsing error:', error);
             } finally {
                 loadingIndicator.classList.add('hidden');
+                generateBtn.disabled = false;
             }
+        }
+
+        function renderMarkdown(markdown) {
+            let html = markdown
+                .replace(/^### (.*$)/gim, '<h3 class="text-xl font-bold mt-4">$1</h3>')
+                .replace(/^## (.*$)/gim, '<h2 class="text-2xl font-bold mt-6">$1</h2>')
+                .replace(/^# (.*$)/gim, '<h1 class="text-3xl font-bold mt-8">$1</h1>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/^- (.*$)/gim, '<li>$1</li>');
+            
+            html = html.replace(/\n/g, '<br>');
+            return html;
         }
 
         function displayMessage(message, type) {
@@ -167,17 +206,16 @@
             if (existingMessage) existingMessage.remove();
 
             const messageBox = document.createElement('div');
-            messageBox.className = `message-box p-4 rounded-md text-sm text-center ${type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`;
+            messageBox.className = `message-box p-4 rounded-md text-sm text-center shadow-lg transition-all duration-300 ${type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`;
             messageBox.textContent = message;
             
-            const container = document.querySelector('.container');
-            container.insertBefore(messageBox, container.children[1]);
+            document.body.appendChild(messageBox);
 
             setTimeout(() => {
-                messageBox.remove();
+                messageBox.style.opacity = '0';
+                setTimeout(() => messageBox.remove(), 300);
             }, 5000);
         }
     </script>
 </body>
 </html>
-
