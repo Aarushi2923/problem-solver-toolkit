@@ -122,7 +122,10 @@
 
                 if (candidate && candidate.content?.parts?.[0]?.text) {
                     const text = candidate.content.parts[0].text;
-                    const markdownText = text.replace(/\*\*/g, '<b>').replace(/\*\*/g, '</b>');
+                    const markdownText = text
+                        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+                        .replace(/^(\d+\.)\s+(.*)$/gm, '<p>$1 <b>$2</b></p>')
+                        .replace(/^- (.*)$/gm, '<li>$1</li>');
                     responseContent.innerHTML = markdownText;
                     solutionOutput.classList.remove('hidden');
 
@@ -138,7 +141,7 @@
                     }
 
                     if (sources.length > 0) {
-                        citationsDiv.innerHTML = '<p class="font-bold">Sources:</p>';
+                        citationsDiv.innerHTML = '<p class="font-bold mt-4">Sources:</p>';
                         sources.forEach((source, index) => {
                             const link = document.createElement('a');
                             link.href = source.uri;
