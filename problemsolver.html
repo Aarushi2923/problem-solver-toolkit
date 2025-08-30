@@ -70,12 +70,10 @@
         async function generateSolution() {
             const userQuery = problemInput.value.trim();
             if (userQuery === '') {
-                // Use a custom message box instead of alert()
                 displayMessage('Please enter a business problem to analyze.', 'error');
                 return;
             }
 
-            // Show loading spinner and clear previous content
             loadingIndicator.classList.remove('hidden');
             solutionOutput.classList.add('hidden');
             responseContent.innerHTML = '';
@@ -124,7 +122,8 @@
 
                 if (candidate && candidate.content?.parts?.[0]?.text) {
                     const text = candidate.content.parts[0].text;
-                    responseContent.textContent = text;
+                    const markdownText = text.replace(/\*\*/g, '<b>').replace(/\*\*/g, '</b>');
+                    responseContent.innerHTML = markdownText;
                     solutionOutput.classList.remove('hidden');
 
                     let sources = [];
